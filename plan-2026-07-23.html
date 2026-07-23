@@ -160,10 +160,9 @@
   </header>
 
   <div class="stats">
-    <div class="stat"><span class="ring" id="ringToday"></span><div><div class="lab">Today</div><div class="big" id="pctToday">—</div></div></div>
-    <div class="stat"><span class="ring" id="ringWeek"></span><div><div class="lab">This week</div><div class="big" id="pctWeek">—</div></div></div>
-    <div class="stat"><span class="ring" id="ringProj"></span><div><div class="lab">Projects avg</div><div class="big" id="pctProj">—</div></div></div>
-    <div class="stat"><div style="font-size:30px">🔥</div><div><div class="lab">Streak</div><div class="big" id="streak">0<small> days</small></div></div></div>
+    <div class="stat"><span class="ring" id="ringTotal"></span><div><div class="lab">Total work</div><div class="big" id="pctTotal">—</div></div></div>
+    <div class="stat"><span class="ring" id="ringNonP"></span><div><div class="lab">Non-Preply</div><div class="big" id="pctNonP">—</div></div></div>
+    <div class="stat"><span class="ring" id="ringPreply"></span><div><div class="lab">Preply</div><div class="big" id="pctPreply">—</div></div></div>
   </div>
 
   <nav class="views">
@@ -189,7 +188,7 @@
 
 <script>
 "use strict";
-const KEY="ccplan_2026-07-23";
+const KEY="ccplan_2026-07-23_v7";
 function uid(){return Math.random().toString(36).slice(2,9);}
 const WD=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const MO=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -219,25 +218,35 @@ function friFixed(){const F=[];const add=(t,x,c,n)=>F.push({id:uid(),time:t,text
   add("6:30pm","Cook dinner (learn a dish)","work");
   add("8pm","Gym","health");
   return F;}
-function T(text,star){return {id:uid(),text,star:!!star,done:false};}
+function T(text,star,min,bucket){return {id:uid(),text,star:!!star,done:false,min:min||0,bucket:bucket||'work'};}
 
 function seed(){
   const date="2026-07-23";
-  const tasks=[T("Preply prep — AM (8:45–9:30)",1),T("Chocolate research prep — 20 min (9:30–9:50)",1),T("Math prep (11:30–12:15)",1),T("Preply prep — PM (1:40–2:25)",1),T("Make chocolate (2:30–4:00)",1)];
-  const fixed=[
-    {id:uid(),time:"→7:40",text:"Walk — first thing (you're on it)",cat:"health",done:false},
-    {id:uid(),time:"7:40",text:"Gym #1 — 35 min + prep",cat:"health",done:false},
-    {id:uid(),time:"8:25",text:"Walk (20 min)",cat:"health",done:false},
-    {id:uid(),time:"9:50",text:"Walk → arrive Supermaxi 10:10",cat:"health",done:false},
-    {id:uid(),time:"10:10",text:"Supermaxi",cat:"life",done:false},
-    {id:uid(),time:"11:10",text:"Walk back → home 11:30",cat:"health",done:false},
-    {id:uid(),time:"12:15",text:"Walk (20 min)",cat:"health",done:false},
-    {id:uid(),time:"12:35",text:"Gym #2 — 35 min + prep",cat:"health",done:false},
-    {id:uid(),time:"1:20",text:"Walk (20 min)",cat:"health",done:false},
-    {id:uid(),time:"4:00",text:"Walk (20 min)",cat:"health",done:false},
-    {id:uid(),time:"4:20",text:"Gym #3 — 35 min + prep",cat:"health",done:false}
+        const tasks=[
+    T("Preply prep — AM (8:00–8:40)",1,40,'preply'),
+    T("Chocolate research prep — 20 min (9:45–10:05)",1,20,'work'),
+    T("Make ganache — 20 min (11:45–12:05)",1,20,'work'),
+    T("Math prep (12:05–12:50)",1,45,'work'),
+    T("Preply prep — PM (3:20–4:05)",1,45,'preply'),
+    T("Make chocolate — roll & finish (4:25–5:55)",1,90,'work')
   ];
-  const day={id:"thu23",date,active:'A',label:"Thursday · July 23",tag:"Fresh start (today only). Tutoring prep ~65/35 Preply/math (math from 11:30). Chocolate 2:30–4:00. 3 gyms + 20-min walks between.",tasks,fixed,altTag:"",altTasks:[],altFixed:[],note:""};
+  const fixed=[
+    {id:uid(),time:"→8:00",text:"Walk — first thing (back by 8:00)",cat:"health",done:false,min:40,bucket:'life'},
+    {id:uid(),time:"8:40",text:"Gym #1 — 35 min + prep",cat:"health",done:false,min:45,bucket:'life'},
+    {id:uid(),time:"9:25",text:"Walk (20 min)",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"10:05",text:"Walk → arrive Supermaxi 10:25",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"10:25",text:"Supermaxi",cat:"life",done:false,min:60,bucket:'life'},
+    {id:uid(),time:"11:25",text:"Walk back → home 11:45",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"12:50",text:"Walk (20 min)",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"1:10",text:"Gym #2 — 35 min + prep",cat:"health",done:false,min:45,bucket:'life'},
+    {id:uid(),time:"2:00",text:"Tutoring session (2–2:50)",cat:"life",done:false,min:50,bucket:'life'},
+    {id:uid(),time:"2:50",text:"Clean chocolate supplies (10 min)",cat:"life",done:false,min:10,bucket:'work'},
+    {id:uid(),time:"3:00",text:"Walk (20 min)",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"4:05",text:"Walk (20 min)",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"5:55",text:"Walk (20 min)",cat:"health",done:false,min:20,bucket:'life'},
+    {id:uid(),time:"6:15",text:"Gym #3 — 35 min + prep",cat:"health",done:false,min:45,bucket:'life'}
+  ];
+  const day={id:"thu23",date,active:'A',label:"Thursday · July 23",tag:"Walk → Preply (8:00) → Gym #1 · Supermaxi 10:25 · ganache 11:45 · tutoring 2–2:50 → clean supplies · walk → chocolate 4:25–5:55 → gym #3 · prep ~65/35 Preply/math.",tasks,fixed,altTag:"",altTasks:[],altFixed:[],note:""};
   return {meta:{weekLabel:"Today — Thursday, July 23, 2026"},days:[day],projects:[
     {id:uid(),name:"⭐ Preply — TOP PRIORITY (curriculum first; account in a few days)",done:false,subs:sub(["Build curriculum — lesson plans (now)","Prep first trial lessons","Create account + profile bio (in a few days)","Set rate","Set availability","TEFL cert alongside"])},
     {id:uid(),name:"Math tutoring prep",done:false,subs:sub(["Outline topics to offer","Build problem sets / examples","Practice explanations"])},
@@ -282,6 +291,11 @@ function actF(d){return d.active==='B'?(d.altFixed||(d.altFixed=[])):(d.fixed||[
 function actTag(d){return d.active==='B'?(d.altTag||'Plan B — alternative day (add tasks below)'):(d.tag||'');}
 function counted(d){return actT(d).concat(actF(d).filter(f=>!f.noCount));}
 function dayPct(d){const it=counted(d);if(!it.length)return null;return Math.round(100*it.filter(t=>t.done).length/it.length);}
+// Time-weighted work progress (by minutes). Buckets: 'preply' | 'work' (non-Preply work). 'life' items (walks/gym/errands) are not work.
+function workPct(d,pred){const it=actT(d).concat(actF(d));let tot=0,done=0;it.forEach(x=>{if(!pred(x))return;const m=x.min||0;tot+=m;if(x.done)done+=m;});return tot?Math.round(100*done/tot):null;}
+function totalWorkPct(d){return workPct(d,x=>x.bucket==='preply'||x.bucket==='work');}
+function nonPreplyPct(d){return workPct(d,x=>x.bucket==='work');}
+function preplyPct(d){return workPct(d,x=>x.bucket==='preply');}
 function weekPct(){let a=0,b=0;S.days.forEach(d=>{const it=counted(d);a+=it.filter(t=>t.done).length;b+=it.length;});return b?Math.round(100*a/b):0;}
 function projPct(p){if(p.done)return 100;if(!p.subs.length)return 0;return Math.round(100*p.subs.filter(s=>s.done).length/p.subs.length);}
 function projAvg(){if(!S.projects.length)return 0;return Math.round(S.projects.reduce((s,p)=>s+projPct(p),0)/S.projects.length);}
@@ -295,12 +309,11 @@ function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">"
 
 function render(){
   document.getElementById("weekLabel").textContent=S.meta.weekLabel;
-  const dp=dayPct(S.days.find(d=>d.id===curDay));
-  document.getElementById("ringToday").innerHTML=ring(dp);
-  document.getElementById("pctToday").innerHTML=(dp===null?"—":dp+"<small>%</small>");
-  const wp=weekPct();document.getElementById("ringWeek").innerHTML=ring(wp);document.getElementById("pctWeek").innerHTML=wp+"<small>%</small>";
-  const pa=projAvg();document.getElementById("ringProj").innerHTML=ring(pa);document.getElementById("pctProj").innerHTML=pa+"<small>%</small>";
-  document.getElementById("streak").innerHTML=streak()+"<small> days</small>";
+  const d0=S.days.find(d=>d.id===curDay);
+  const tw=totalWorkPct(d0),np=nonPreplyPct(d0),pr=preplyPct(d0);
+  document.getElementById("ringTotal").innerHTML=ring(tw);document.getElementById("pctTotal").innerHTML=(tw===null?"—":tw+"<small>%</small>");
+  document.getElementById("ringNonP").innerHTML=ring(np);document.getElementById("pctNonP").innerHTML=(np===null?"—":np+"<small>%</small>");
+  document.getElementById("ringPreply").innerHTML=ring(pr);document.getElementById("pctPreply").innerHTML=(pr===null?"—":pr+"<small>%</small>");
   renderChips();renderDay();renderProjects();save();
 }
 function renderChips(){

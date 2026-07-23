@@ -15,8 +15,16 @@
  a.day{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);transition:.15s}
  a.day:hover{border-color:var(--accent2);transform:translateY(-1px)}
  .day .dot{flex:0 0 auto;width:44px;height:44px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:18px}
- .day .mid{flex:1;min-width:0}.day .t{font-weight:650;font-size:16px}.day .d{color:var(--muted);font-size:13px;margin-top:2px}
- .day .go{color:var(--accent);font-weight:600}
+ .day .mid{flex:1;min-width:0}.day .t{font-weight:650;font-size:16px;display:flex;align-items:center;gap:8px}
+ .day .t .lbl{flex:1;min-width:0}.day .d{color:var(--muted);font-size:13px;margin-top:2px}
+ .day .go{color:var(--accent);font-weight:600;white-space:nowrap}
+ .trk{display:grid;gap:6px;margin-top:11px}
+ .trk .row{display:flex;align-items:center;gap:9px}
+ .trk .rl{flex:0 0 auto;width:78px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--faint)}
+ .trk .rb{flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+ .trk .rb>i{display:block;height:100%;border-radius:4px;transition:width .3s}
+ .trk .rp{flex:0 0 auto;width:36px;text-align:right;font-size:11px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+ .cmeta{display:block;font-size:12px;color:var(--faint);margin-top:7px}
  .today{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft) inset}
  .badge{font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
  .hint{color:var(--faint);font-size:13px;margin-top:18px;line-height:1.5}
@@ -28,12 +36,49 @@
 <script>
  // Add a new entry at the TOP for each new day.
  const DAYS=[
-  {date:"2026-07-23",wd:"Thu",label:"Thursday, July 23, 2026",note:"Walks · 3 gyms · tutoring prep (Preply/math) · chocolate 2:30",file:"plan-2026-07-23.html"}
+  {date:"2026-07-23",wd:"Thu",label:"Thursday, July 23, 2026",note:"Walk back 8:00 · 3 gyms · tutoring session 2 pm · Preply/math prep · ganache 11:45 · chocolate in the evening",file:"plan-2026-07-23.html"}
  ];
  function todayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+ // Read a day's saved WORK progress from its tracker (same-origin localStorage), time-weighted by minutes.
+ // Buckets: 'preply' | 'work' (non-Preply work). 'life' items (walks/gym/errands) are not work and don't count here.
+ function workProgress(date){
+   var re=new RegExp('^ccplan_'+date+'(_v\\d+)?$'), best=null, bestV=-1;
+   for(var i=0;i<localStorage.length;i++){
+     var k=localStorage.key(i); if(!k||!re.test(k)) continue;
+     var m=k.match(/_v(\d+)$/), v=m?parseInt(m[1],10):0;
+     if(v>=bestV){bestV=v;best=k;}
+   }
+   if(!best) return null;
+   try{
+     var S=JSON.parse(localStorage.getItem(best));
+     var days=(S&&S.days)||[];
+     var d=days.filter(function(x){return x.date===date;})[0]||days[0];
+     if(!d) return null;
+     var it=(d.active==='B'?(d.altTasks||[]):(d.tasks||[])).concat(d.active==='B'?(d.altFixed||[]):(d.fixed||[]));
+     function pctFor(pred){var tot=0,done=0;it.forEach(function(x){if(!pred(x))return;var m=x.min||0;tot+=m;if(x.done)done+=m;});return tot?{pct:Math.round(100*done/tot),done:done,tot:tot}:null;}
+     return {
+       total: pctFor(function(x){return x.bucket==='preply'||x.bucket==='work';}),
+       nonp:  pctFor(function(x){return x.bucket==='work';}),
+       preply:pctFor(function(x){return x.bucket==='preply';})
+     };
+   }catch(e){ return null; }
+ }
+ function trkRow(label,o,style){var pct=o?o.pct:0;return '<span class="row"><span class="rl">'+label+'</span><span class="rb"><i style="width:'+pct+'%;'+style+'"></i></span><span class="rp">'+(o?pct+'%':'—')+'</span></span>';}
  const t=todayISO();
  document.getElementById("list").innerHTML=DAYS.map(function(x){
    var isT=x.date===t;
-   return '<a class="day '+(isT?"today":"")+'" href="'+x.file+'"><span class="dot">'+x.wd+'</span><span class="mid"><span class="t">'+x.label+(isT?'<span class="badge">TODAY</span>':'')+'</span><span class="d">'+x.note+'</span></span><span class="go">Open →</span></a>';
+   var w=workProgress(x.date);
+   var trk=w?('<span class="trk">'+
+       trkRow('Total work',w.total,'background:linear-gradient(90deg,var(--accent),var(--accent2))')+
+       trkRow('Non-Preply',w.nonp,'background:var(--good)')+
+       trkRow('Preply',w.preply,'background:#e0a53a')+
+     '</span>'):'<span class="cmeta">Not started yet — open the day to check things off</span>';
+   return '<a class="day '+(isT?"today":"")+'" href="'+x.file+'">'+
+     '<span class="dot">'+x.wd+'</span>'+
+     '<span class="mid">'+
+       '<span class="t">'+x.label+(isT?'<span class="badge">TODAY</span>':'')+'</span>'+
+       '<span class="d">'+x.note+'</span>'+trk+
+     '</span>'+
+     '<span class="go">Open →</span></a>';
  }).join("");
 </script></body></html>
